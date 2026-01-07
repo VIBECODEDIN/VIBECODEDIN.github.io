@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orange Matrix Portal</title>
+    <style>
+        /* CSS Reset & Basic Setup */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #000;
+            color: #FF6B00;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            /* Prevent scrollbars */
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+        }
+
+        /* Canvas Background */
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* Scanline Overlay Effect */
+        .scanlines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom,
+                    rgba(255, 255, 255, 0),
+                    rgba(255, 255, 255, 0) 50%,
+                    rgba(0, 0, 0, 0.2) 50%,
+                    rgba(0, 0, 0, 0.2));
+            background-size: 100% 4px;
+            z-index: 2;
+            pointer-events: none;
+            /* Let clicks pass through */
+            opacity: 0.3;
+        }
+
+        /* Main Content Container */
+        .container {
+            position: relative;
+            z-index: 10;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: radial-gradient(circle, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0) 70%);
+        }
+
+        /* Main Text Typography */
+        h1 {
+            font-size: 4rem;
+            font-weight: bold;
+            /* text-transform: lowercase; Removed to allow "VIBECODED IN" caps */
+            letter-spacing: -2px;
+            margin-bottom: 2rem;
+            color: #FFA500;
+            text-shadow: 0 0 10px #FF6B00, 0 0 20px #FF6B00;
+            animation: glitch 3s infinite;
+        }
+
+        /* Icon Container */
+        .icons {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        /* Icon Styling */
+        .icon-btn {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #FF6B00;
+            padding: 15px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 60px;
+            height: 60px;
+            position: relative;
+        }
+
+        .icon-btn svg {
+            width: 24px;
+            height: 24px;
+            fill: #FF6B00;
+            transition: all 0.3s ease;
+        }
+
+        /* Specific style for image icon to fit better */
+        .icon-btn img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: all 0.3s ease;
+        }
+
+        /* Hover Effects */
+        .icon-btn:hover {
+            background: rgba(255, 107, 0, 0.2);
+            box-shadow: 0 0 15px #FF6B00;
+            transform: scale(1.1);
+        }
+
+        .icon-btn:hover svg {
+            fill: #FFF;
+        }
+
+        /* Tooltip / Toast Notification */
+        .toast {
+            position: absolute;
+            bottom: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #FF6B00;
+            color: #000;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: opacity 0.3s ease, bottom 0.3s ease;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .toast.visible {
+            opacity: 1;
+            bottom: -60px;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            .icons {
+                gap: 1.5rem;
+            }
+
+            .icon-btn {
+                width: 50px;
+                height: 50px;
+            }
+        }
+
+        /* Glitch Animation */
+        @keyframes glitch {
+            0% {
+                transform: skew(0deg);
+            }
+
+            20% {
+                transform: skew(0deg);
+            }
+
+            21% {
+                transform: skew(-2deg);
+            }
+
+            22% {
+                transform: skew(2deg);
+            }
+
+            23% {
+                transform: skew(0deg);
+            }
+
+            70% {
+                opacity: 1;
+            }
+
+            71% {
+                opacity: 0.8;
+            }
+
+            72% {
+                opacity: 1;
+            }
+
+            100% {
+                transform: skew(0deg);
+            }
+        }
+
+        .subheadline {
+            margin-bottom: 2rem;
+            line-height: 1.4;
+            color: #FF6B00;
+            font-size: 1.1rem;
+            text-shadow: 0 0 5px #FF6B00;
+            max-width: 600px;
+        }
+
+        .subheadline p {
+            margin: 0.3rem 0;
+            opacity: 0.9;
+        }
+
+        .subheadline .token {
+            font-weight: bold;
+            font-size: 1.8rem;
+            margin-top: 1.5rem;
+            color: #FFA500;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Canvas for Matrix Rain -->
+    <canvas id="matrixCanvas"></canvas>
+
+    <!-- Scanline Texture Overlay -->
+    <div class="scanlines"></div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <h1>VIBECODED IN</h1>
+
+        <div class="subheadline">
+            <p>Choose the orange pill. 💊</p>
+            <p>Vibe coded into the Matrix core.</p>
+            <p>Not simulated anymore.</p>
+            <p>The pattern became reality.</p>
+            <p>What was hidden activated.</p>
+            <p>The code leaked through.</p>
+            <p>You’re standing inside it now.</p>
+            <p>This is the source layer.</p>
+            <p class="token">$VIBECODED</p>
+        </div>
+
+        <div class="icons">
+            <!-- X (Twitter) Icon -->
+            <a href="https://x.com/baseddev1262134" target="_blank" class="icon-btn" aria-label="Visit X Profile">
+                <!-- SVG Path for X logo -->
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                    <path
+                        d="M389.2 48h70.6L305.6 224.2 487 464H345L233.7 318.6 106.5 464H35.8L200.7 275.5 26.8 48H172.4L272.9 180.9 389.2 48zM364.4 421.8h39.1L151.1 88h-42L364.4 421.8z" />
+                </svg>
+            </a>
+
+            <!-- Token Icon (Custom Image) -->
+            <div class="icon-btn" id="pumpBtn" aria-label="Copy Token Address" style="padding: 10px;">
+                <img src="data:image/png;base64,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"
+                    alt="Token Icon">
+                <div class="toast" id="toast">Address Copied!</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const CONFIG = {
+            // Placeholder token address - Replace with actual
+            tokenAddress: "PumpFunTokenAddress123456789",
+            // Colors from PRD
+            colors: {
+                bg: "rgba(0, 0, 0, 0.05)", // Low opacity for trail effect
+                textPrimary: "#FF6B00",    // Standard Orange
+                textHighlight: "#FFA500"   // Lighter Orange
+            },
+            fps: 30 // Animation speed control
+        };
+
+        // --- MATRIX RAIN ENGINE ---
+        const canvas = document.getElementById('matrixCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Set canvas to full screen
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Characters (Katakana + Latin + Numbers)
+        const katakana = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン';
+        const latin = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const nums = '0123456789';
+        const alphabet = katakana + latin + nums;
+
+        const fontSize = 16;
+        let columns = Math.floor(canvas.width / fontSize);
+
+        // Array of drops - one per column
+        let drops = [];
+        for (let x = 0; x < columns; x++) {
+            drops[x] = Math.random() * canvas.height;
+        }
+
+        // Draw function
+        function draw() {
+            // Black BG with opacity for trail effect
+            ctx.fillStyle = CONFIG.colors.bg;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Set font style
+            ctx.font = fontSize + 'px monospace';
+
+            // Loop over drops
+            for (let i = 0; i < drops.length; i++) {
+                // Random character
+                const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+
+                // Color randomization: Mostly orange, occasional light orange
+                ctx.fillStyle = Math.random() > 0.95
+                    ? CONFIG.colors.textHighlight
+                    : CONFIG.colors.textPrimary;
+
+                // Render character
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                // Reset drop to top randomly after it's passed screen height
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+
+                // Increment Y coordinate
+                drops[i]++;
+            }
+        }
+
+        // Animation Loop ( throttled to 30fps for "classic" feel )
+        setInterval(draw, 1000 / CONFIG.fps);
+
+        // Update columns on resize
+        window.addEventListener('resize', () => {
+            columns = Math.floor(canvas.width / fontSize);
+            if (drops.length < columns) {
+                for (let i = drops.length; i < columns; i++) {
+                    drops[i] = Math.random() * canvas.height;
+                }
+            }
+        });
+
+
+        // --- INTERACTIVITY ---
+
+        // Copy to Clipboard Logic
+        const pumpBtn = document.getElementById('pumpBtn');
+        const toast = document.getElementById('toast');
+
+        pumpBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(CONFIG.tokenAddress).then(() => {
+                showToast();
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+        });
+
+        function showToast() {
+            toast.classList.add('visible');
+            setTimeout(() => {
+                toast.classList.remove('visible');
+            }, 2000);
+        }
+
+    </script>
+</body>
+
+</html>
